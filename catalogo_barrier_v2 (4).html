@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo de Productos — Barrier</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1a3a5c; --primary-light: #2a5298; --accent: #0ea5e9;
+    --bg: #f0f4f8; --card: #ffffff; --border: #d1dce8;
+    --text: #1e2d3d; --muted: #6b7f94; --tag-bg: #e8f0fe; --tag-text: #2a5298;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--primary); color: white; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  header .logo { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  header .subtitle { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+  .header-stats { font-size: 13px; opacity: 0.8; text-align: right; }
+  .main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+  .search-bar { background: var(--card); border-radius: 12px; padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .search-input-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-input-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  input[type="text"], select { width: 100%; padding: 10px 12px 10px 38px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; color: var(--text); background: white; }
+  select { padding-left: 12px; min-width: 180px; cursor: pointer; }
+  input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
+  .btn-search { padding: 10px 24px; background: var(--primary-light); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .btn-search:hover { background: var(--primary); }
+  .btn-search:disabled { opacity: 0.6; cursor: default; }
+  .btn-clear { padding: 10px 16px; background: transparent; color: var(--muted); border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+  .btn-clear:hover { background: var(--bg); color: var(--text); }
+  .stats-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .stats-bar .count { font-size: 14px; color: var(--muted); }
+  .stats-bar .count strong { color: var(--text); font-weight: 600; }
+  .results-grid { display: flex; flex-direction: column; gap: 10px; }
+  .product-card { background: var(--card); border-radius: 10px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1.5px solid transparent; cursor: pointer; transition: all 0.18s; }
+  .product-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(14,165,233,0.12); transform: translateY(-1px); }
+  .product-card.expanded { border-color: var(--primary-light); }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.4; flex: 1; }
+  .card-meta { display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .tag-proveedor { background: var(--tag-bg); color: var(--tag-text); }
+  .tag-marca { background: #f0fdf4; color: #166534; }
+  .tag-fuente { background: #fef3c7; color: #92400e; font-size: 11px; }
+  .card-codes { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .card-codes span { background: #f8fafc; border: 1px solid var(--border); padding: 1px 7px; border-radius: 4px; font-family: monospace; font-size: 12px; display: inline-block; margin: 2px 2px 2px 0; color: var(--text); }
+  .card-detail { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .product-card.expanded .card-detail { display: block; }
+  .detail-row { display: flex; gap: 8px; margin-bottom: 8px; font-size: 13.5px; }
+  .detail-label { color: var(--muted); font-weight: 500; min-width: 110px; flex-shrink: 0; }
+  .detail-value { color: var(--text); line-height: 1.5; }
+  .variants-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  .variants-table th { background: #f8fafc; padding: 7px 10px; text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1.5px solid var(--border); }
+  .variants-table td { padding: 7px 10px; border-bottom: 1px solid #f0f4f8; font-family: monospace; font-size: 12.5px; }
+  .variants-table tr:last-child td { border-bottom: none; }
+  .variants-table tr:hover td { background: #f8fafc; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state h3 { font-size: 18px; margin-bottom: 6px; color: var(--text); }
+  .loader { text-align: center; padding: 40px; color: var(--muted); font-size: 15px; }
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+  .page-btn { padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 7px; background: white; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .page-btn:hover { background: var(--bg); }
+  .page-btn.active { background: var(--primary-light); color: white; border-color: var(--primary-light); }
+  .page-btn:disabled { opacity: 0.4; cursor: default; }
+  .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+  @media (max-width: 600px) { header { padding: 14px 16px; flex-direction: column; align-items: flex-start; gap: 8px; } .main { padding: 16px 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">⬡ BARRIER</div>
+    <div class="subtitle">Catálogo de Productos</div>
+  </div>
+  <div class="header-stats" id="headerStats">Conectando...</div>
+</header>
+
+<div class="main">
+  <div class="search-bar">
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Buscar por descripción, marca o código..." autocomplete="off">
+      </div>
+      <select id="proveedorFilter"><option value="">Todos los proveedores</option></select>
+      <button class="btn-search" id="btnSearch" onclick="doSearch()">Buscar</button>
+      <button class="btn-clear" onclick="clearSearch()">Limpiar</button>
+    </div>
+  </div>
+
+  <div id="errorBanner" style="display:none" class="error-banner"></div>
+  <div class="stats-bar"><div class="count" id="statsText"></div></div>
+  <div class="results-grid" id="results"><div class="loader"><span class="spinner"></span>Conectando con la base de datos...</div></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://swnqsilkkdnoijysmtrj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3bnFzaWxra2Rub2lqeXNtdHJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0NzI3MzUsImV4cCI6MjA4ODA0ODczNX0.Uqxc4HQzUYa8j5YCuzsnPmrnrlVGGzgypb2G-Ps-RcU';
+const PAGE_SIZE = 25;
+
+let currentPage = 1;
+let cachedResults = null;
+let currentQuery = '';
+let currentProveedor = '';
+
+async function query(table, params = {}) {
+  const base = `${SUPABASE_URL}/rest/v1/${table}`;
+  const parts = [];
+  Object.entries(params).forEach(([k, v]) => {
+    // 'or' must not have its value encoded
+    if (k === 'or') {
+      parts.push('or=' + v);
+    } else {
+      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+    }
+  });
+  const url = parts.length ? base + '?' + parts.join('&') : base;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Accept': 'application/json',
+      'Prefer': 'count=exact'
+    }
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`HTTP ${res.status}: ${err}`);
+  }
+  const contentRange = res.headers.get('content-range');
+  const total = contentRange ? parseInt(contentRange.split('/')[1]) : null;
+  const data = await res.json();
+  return { data, total };
+}
+
+async function init() {
+  try {
+    const { data: provs } = await query('proveedores', { select: 'nombre', order: 'nombre.asc' });
+    const sel = document.getElementById('proveedorFilter');
+    provs.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.nombre; o.textContent = p.nombre;
+      sel.appendChild(o);
+    });
+
+    const { total } = await query('productos', { select: 'id', limit: 1 });
+    document.getElementById('headerStats').textContent =
+      `${total?.toLocaleString()} productos · ${provs.length} proveedores`;
+
+    await loadProducts();
+  } catch(e) {
+    showError('No se pudo conectar: ' + e.message);
+  }
+}
+
+async function loadProducts() {
+  setLoading(true);
+  try {
+    const params = {
+      select: 'id,descripcion,marca,talle_medida,unidades,codigos,observaciones,fuente,proveedores(nombre)',
+      order: 'descripcion.asc',
+      limit: 2500
+    };
+
+    if (currentQuery) {
+      params['or'] = `descripcion.ilike.%${currentQuery}%,codigos.ilike.%${currentQuery}%,marca.ilike.%${currentQuery}%`;
+    }
+
+    const { data } = await query('productos', params);
+
+    let filtered = data;
+    if (currentProveedor) {
+      filtered = data.filter(p => p.proveedores?.nombre === currentProveedor);
+    }
+
+    cachedResults = filtered;
+    currentPage = 1;
+    renderPage();
+
+    const total = filtered.length;
+    document.getElementById('headerStats').textContent =
+      currentQuery || currentProveedor
+        ? `${total.toLocaleString()} resultados encontrados`
+        : `${data.length.toLocaleString()} productos · ${document.getElementById('proveedorFilter').options.length - 1} proveedores`;
+
+  } catch(e) {
+    showError('Error al buscar: ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderPage() {
+  const total = cachedResults.length;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+  const page = cachedResults.slice(start, end);
+
+  document.getElementById('statsText').innerHTML = total === 0
+    ? ''
+    : `Mostrando <strong>${start+1}–${end}</strong> de <strong>${total.toLocaleString()}</strong> productos`;
+
+  const container = document.getElementById('results');
+
+  if (total === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:16px;opacity:0.4"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h3>Sin resultados</h3><p>Probá con otro término o limpiar los filtros</p></div>`;
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = page.map(renderCard).join('');
+  renderPagination(total);
+}
+
+function renderCard(p) {
+  const proveedor = p.proveedores?.nombre || '';
+  const codes = p.codigos ? p.codigos.split('//').map(s => s.trim()).filter(Boolean) : [];
+  const sizes = p.talle_medida ? p.talle_medida.split('//').map(s => s.trim()).filter(Boolean) : [];
+
+  const codesHtml = codes.slice(0,5).map(c => `<span>${esc(c)}</span>`).join('') +
+    (codes.length > 5 ? `<span style="background:#e8f0fe;color:#2a5298">+${codes.length-5} más</span>` : '');
+
+  const maxRows = Math.max(codes.length, sizes.length);
+  let variantsHtml = '';
+  if (maxRows > 1) {
+    variantsHtml = `<table class="variants-table"><thead><tr>
+      ${sizes.length ? '<th>Talle / Medida</th>' : ''}
+      ${codes.length ? '<th>Código</th>' : ''}
+    </tr></thead><tbody>${Array.from({length: maxRows}, (_,i) => `<tr>
+      ${sizes.length ? `<td>${esc(sizes[i]||'—')}</td>` : ''}
+      ${codes.length ? `<td>${esc(codes[i]||'—')}</td>` : ''}
+    </tr>`).join('')}</tbody></table>`;
+  }
+
+  return `<div class="product-card" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-title">${esc(p.descripcion)}</div>
+      <div class="card-meta">
+        ${p.marca ? `<span class="tag tag-marca">${esc(p.marca)}</span>` : ''}
+        <span class="tag tag-proveedor">${esc(proveedor)}</span>
+        ${p.fuente === 'pdf' ? `<span class="tag tag-fuente">PDF</span>` : ''}
+      </div>
+    </div>
+    ${codes.length ? `<div class="card-codes">${codesHtml}</div>` : ''}
+    <div class="card-detail">
+      ${p.unidades ? `<div class="detail-row"><span class="detail-label">Unidades</span><span class="detail-value">${esc(p.unidades)}</span></div>` : ''}
+      ${p.observaciones ? `<div class="detail-row"><span class="detail-label">Observaciones</span><span class="detail-value">${esc(p.observaciones)}</span></div>` : ''}
+      ${variantsHtml ? `<div class="detail-row" style="flex-direction:column"><span class="detail-label" style="margin-bottom:8px">Variantes</span>${variantsHtml}</div>`
+        : `${sizes.length===1 ? `<div class="detail-row"><span class="detail-label">Talle/Medida</span><span class="detail-value">${esc(sizes[0])}</span></div>` : ''}
+           ${codes.length===1 ? `<div class="detail-row"><span class="detail-label">Código</span><span class="detail-value" style="font-family:monospace">${esc(codes[0])}</span></div>` : ''}`}
+    </div>
+  </div>`;
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Anterior</button>`;
+  const range = [];
+  for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) range.push(i);
+  if (range[0] > 1) html += `<button class="page-btn" onclick="goPage(1)">1</button>${range[0]>2?'<span style="padding:0 4px">…</span>':''}`;
+  range.forEach(p => html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`);
+  if (range[range.length-1] < totalPages) html += `${range[range.length-1]<totalPages-1?'<span style="padding:0 4px">…</span>':''}<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Siguiente →</button>`;
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(cachedResults.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderPage();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function doSearch() {
+  currentQuery = document.getElementById('searchInput').value.trim();
+  currentProveedor = document.getElementById('proveedorFilter').value;
+  loadProducts();
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('proveedorFilter').value = '';
+  currentQuery = ''; currentProveedor = '';
+  loadProducts();
+}
+
+function setLoading(on) {
+  document.getElementById('btnSearch').disabled = on;
+  if (on) document.getElementById('results').innerHTML = '<div class="loader"><span class="spinner"></span>Buscando...</div>';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('results').innerHTML = '';
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+init();
+</script>
+</body>
+</html>
